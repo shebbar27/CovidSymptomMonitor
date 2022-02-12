@@ -4,6 +4,7 @@ import static android.widget.AdapterView.*;
 import static com.sunaada.hebbar.assignment1.AppUtility.*;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.View;
@@ -14,6 +15,7 @@ import android.widget.RatingBar;
 import android.widget.RatingBar.OnRatingBarChangeListener;
 import android.widget.Spinner;
 import android.widget.Toast;
+
 import java.util.HashMap;
 
 public class SymptomLoggingActivity extends AppCompatActivity
