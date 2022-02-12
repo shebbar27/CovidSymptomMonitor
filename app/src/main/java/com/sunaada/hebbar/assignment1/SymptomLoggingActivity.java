@@ -49,11 +49,11 @@ public class SymptomLoggingActivity extends AppCompatActivity
     @Override
     public void onClick(View view) {
         if(view.getId() == R.id.upload_symptoms_button) {
-            CreateAndDisplayToast(this,
+            createAndDisplayToast(this,
                     getString(R.string.uploading_symptoms_data),
                     Toast.LENGTH_LONG);
             // TODO
-            CreateAndDisplayToast(this, getString(R.string.uploading_symptoms_data_success));
+            createAndDisplayToast(this, getString(R.string.uploading_symptoms_data_success));
         }
     }
 

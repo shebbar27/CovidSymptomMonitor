@@ -7,10 +7,11 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.List;
+import java.util.ArrayList;
 
 public class AppUtility {
     public static void handleException(Exception e, AppCompatActivity activity) {
@@ -30,7 +31,7 @@ public class AppUtility {
                 title,
                 message,
                 positiveButtonText,
-                (dialog, which) -> ExitApplication(activity),
+                (dialog, which) -> exitApplication(activity),
                 activity.getString(empty_string),
                 (dialog, which) -> { });
     }
@@ -44,7 +45,7 @@ public class AppUtility {
                 title,
                 message,
                 positiveButtonText,
-                (dialog, which) -> ExitApplication(activity),
+                (dialog, which) -> exitApplication(activity),
                 negativeButtonText,
                 (dialog, which) -> dialog.cancel());
     }
@@ -68,14 +69,14 @@ public class AppUtility {
         dialog.show();
     }
 
-    public static void ExitApplication(AppCompatActivity activity) {
+    public static void exitApplication(AppCompatActivity activity) {
         activity.finishAndRemoveTask();
         System.exit(0);
     }
 
-    public static void RegisterButtonOnClickCallBack(AppCompatActivity activity,
+    public static void registerButtonOnClickCallBack(AppCompatActivity activity,
                                                      View.OnClickListener listener,
-                                                     List<Integer> buttonIds) {
+                                                     ArrayList<Integer> buttonIds) {
         for(Integer id: buttonIds) {
             Button button = activity.findViewById(id);
             if(button != null) {
@@ -88,14 +89,14 @@ public class AppUtility {
         }
     }
 
-    public static void CreateAndDisplayToast(AppCompatActivity activity,
+    public static void createAndDisplayToast(AppCompatActivity activity,
                                              String message,
                                              int duration) {
         Toast toast = Toast.makeText(activity, message, duration);
         toast.show();
     }
 
-    public static void CreateAndDisplayToast(AppCompatActivity activity, String message) {
-        CreateAndDisplayToast(activity, message, Toast.LENGTH_SHORT);
+    public static void createAndDisplayToast(AppCompatActivity activity, String message) {
+        createAndDisplayToast(activity, message, Toast.LENGTH_SHORT);
     }
 }

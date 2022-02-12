@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        AppUtility.RegisterButtonOnClickCallBack(this,
+        AppUtility.registerButtonOnClickCallBack(this,
                 this,
                 new ArrayList<Integer>() {{
                     add(measure_heart_rate_button);
@@ -62,11 +62,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
     }
 
     private void uploadSignsData() {
-        CreateAndDisplayToast(this,
+        createAndDisplayToast(this,
                 getString(uploading_measured_signs_data),
                 Toast.LENGTH_LONG);
         // TODO
-        CreateAndDisplayToast(this,
+        createAndDisplayToast(this,
                 getString(uploading_measured_signs_data_success));
     }
 
