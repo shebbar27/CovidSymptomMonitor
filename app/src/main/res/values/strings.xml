@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">Covid-19 Symptom Monitor</string>
+    <string name="symptoms">Symptoms</string>
+    <string name="upload_signs">Upload Signs</string>
+    <string name="measure_heart_rate">Measure Heart Rate</string>
+    <string name="measure_respiratory_rate">Measure Respiratory Rate</string>
+    <string name="heart_rate">Heart Rate</string>
+    <string name="respiratory_rate">Respiratory Rate</string>
+    <string name="symptom_logging_page">Symptom Logging Page</string>
+    <string name="upload_symptoms">Upload Symptoms</string>
+    <string name="symptom_rating">Symptom Rating</string>
+    <string name="select_symptom">Select Symptom</string>
+    <string name="crash_dialog_title">Error</string>
+    <string name="crash_dialog_message">Unfortunately Covid-19 Symptom Monitor has stopped working!</string>
+    <string name="exit_dialog_title">Exiting App</string>
+    <string name="exit_dialog_message">Are you sure you want to exit?</string>
+    <string name="uploading_symptoms_data">Uploading Symptoms Data</string>
+    <string name="uploading_symptoms_data_success">Successfully Uploaded Symptoms Data</string>
+    <string name="uploading_measured_signs_data">Uploading Measured Signs Data</string>
+    <string name="uploading_measured_signs_data_success">Successfully Uploaded Measured Signs Data</string>
+    <string name="exit">Exit</string>
+    <string name="alert_dialog_ok">OK</string>
+    <string name="alert_dialog_yes">Yes</string>
+    <string name="alert_dialog_no">No</string>
+    <string name="empty_string" />
+    <string-array name="select_symptom_spinner_items">
+        <item>Nausea</item>
+        <item>Headache</item>
+        <item>Diarrhea</item>
+        <item>Soar Throat</item>
+        <item>Fever</item>
+        <item>Muscle Ache</item>
+        <item>Loss of Smell or Taste</item>
+        <item>Cough</item>
+        <item>Shortness of Breath</item>
+        <item>Feeling Tired</item>
+    </string-array>
+</resources>
