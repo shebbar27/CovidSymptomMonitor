@@ -15,7 +15,6 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements OnClickListener{
         );
 
         this.initializeCamera();
-        this.startCamera();
+        this.getPermissionsAndCameraPreview();
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -83,15 +82,15 @@ public class MainActivity extends AppCompatActivity implements OnClickListener{
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode == REQUEST_PERMISSIONS_CODE && grantResults.length > 0) {
-            if(this.isCameraPermissionsGranted()) {
-                this.isCameraPermitted = true;
-                this.configureAndStartPreviewCamera();
-            }
-            else {
-                ((ActivityManager)(this.getSystemService(ACTIVITY_SERVICE))).clearApplicationUserData();
-                recreate();
-            }
+        if(requestCode == REQUEST_PERMISSIONS_CODE && grantResults.length > 0 && this.isCameraPermissionsGranted()) {
+            this.isCameraPermitted = true;
+            this.configureAndStartCameraPreview();
+        }
+        else {
+            createExitAlertDialogWithConsentAndExit(this,
+                    getString(camera_permission_denied_alert_title),
+                    getString(camera_permission_denied_alert_message),
+                    getString(alert_dialog_ok));
         }
     }
 
@@ -144,16 +143,16 @@ public class MainActivity extends AppCompatActivity implements OnClickListener{
         this.isCameraInitialized = true;
     }
 
-    private void startCamera() {
+    private void getPermissionsAndCameraPreview() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions( new String[]{ CAMERA_PERMISSION }, REQUEST_PERMISSIONS_CODE);
         }
         else {
-            this.configureAndStartPreviewCamera();
+            this.configureAndStartCameraPreview();
         }
     }
 
-    private void configureAndStartPreviewCamera() {
+    private void configureAndStartCameraPreview() {
         if(!this.isCameraPermitted) {
             Log.d("Camera_Permit_Denied", "Camera permission denied!");
             return;

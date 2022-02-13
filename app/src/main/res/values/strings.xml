@@ -11,18 +11,26 @@
     <string name="symptom_rating">Symptom Rating</string>
     <string name="select_symptom">Select Symptom</string>
     <string name="crash_dialog_title">Error</string>
-    <string name="crash_dialog_message">Unfortunately Covid-19 Symptom Monitor has stopped working!</string>
+    <string name="crash_dialog_message">
+        Unfortunately Covid-19 Symptom Monitor has stopped working!
+    </string>
     <string name="exit_dialog_title">Exiting App</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="uploading_symptoms_data">Uploading Symptoms Data</string>
     <string name="uploading_symptoms_data_success">Successfully Uploaded Symptoms Data</string>
     <string name="uploading_measured_signs_data">Uploading Measured Signs Data</string>
-    <string name="uploading_measured_signs_data_success">Successfully Uploaded Measured Signs Data</string>
+    <string name="uploading_measured_signs_data_success">
+        Successfully Uploaded Measured Signs Data
+    </string>
     <string name="exit">Exit</string>
     <string name="alert_dialog_ok">OK</string>
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
     <string name="empty_string" />
+    <string name="camera_permission_denied_alert_title">Camera Permission Denied</string>
+    <string name="camera_permission_denied_alert_message">
+        "Covid-19 Symptom Monitor app can't function without access to Camera! Go to Settings and Enable Camera Access. Exiting the app!"
+    </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>
