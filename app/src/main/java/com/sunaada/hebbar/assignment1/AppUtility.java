@@ -10,8 +10,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
+import java.util.concurrent.Executor;
 
 public class AppUtility {
     public static void handleException(Exception e, AppCompatActivity activity) {
@@ -98,5 +100,9 @@ public class AppUtility {
 
     public static void createAndDisplayToast(AppCompatActivity activity, String message) {
         createAndDisplayToast(activity, message, Toast.LENGTH_SHORT);
+    }
+
+    public static Executor getExecutor(AppCompatActivity activity) {
+        return ContextCompat.getMainExecutor(activity);
     }
 }
