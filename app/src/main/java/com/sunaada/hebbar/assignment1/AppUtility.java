@@ -16,17 +16,17 @@ import java.util.ArrayList;
 public class AppUtility {
     public static void handleException(Exception e, AppCompatActivity activity) {
         e.printStackTrace();
-        createExitAlertDialogWithConsent(
+        createExitAlertDialogWithConsentAndExit(
                 activity,
                 activity.getString(crash_dialog_title),
                 activity.getString(crash_dialog_message),
                 activity.getString(alert_dialog_ok));
     }
 
-    public static void createExitAlertDialogWithConsent(AppCompatActivity activity,
-                                                        String title,
-                                                        String message,
-                                                        String positiveButtonText) {
+    public static void createExitAlertDialogWithConsentAndExit(AppCompatActivity activity,
+                                                               String title,
+                                                               String message,
+                                                               String positiveButtonText) {
         createAlertDialogAndShow(activity,
                 title,
                 message,
@@ -36,11 +36,11 @@ public class AppUtility {
                 (dialog, which) -> { });
     }
 
-    public static void createExitAlertDialogWithConsent(AppCompatActivity activity,
-                                                        String title,
-                                                        String message,
-                                                        String positiveButtonText,
-                                                        String negativeButtonText) {
+    public static void createExitAlertDialogWithConsentAndExit(AppCompatActivity activity,
+                                                               String title,
+                                                               String message,
+                                                               String positiveButtonText,
+                                                               String negativeButtonText) {
         createAlertDialogAndShow(activity,
                 title,
                 message,
