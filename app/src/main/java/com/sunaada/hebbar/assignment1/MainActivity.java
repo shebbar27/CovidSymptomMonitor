@@ -27,10 +27,12 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.io.*;
 
@@ -41,18 +43,22 @@ public class MainActivity extends AppCompatActivity
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
     private static final int VIDEO_RECORDING_DURATION = 45000;
+    private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
     };
 
-    private String capturedVideoOutputFilePath;
+    private static String capturedVideoOutputDir;
+
     private PreviewView previewView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private boolean isCameraConfigured = false;
     private boolean heartRateMeasurementInProgress = false;
     private VideoCapture videoCapture;
     private Camera camera;
+    private Float HeartRate;
+    private EditText editText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +76,8 @@ public class MainActivity extends AppCompatActivity
                 }}
         );
 
-        this.capturedVideoOutputFilePath = getApplicationContext().getFilesDir().toString();
+        capturedVideoOutputDir = getApplicationContext().getFilesDir().toString();
+        this.editText = findViewById(heart_rate_textview);
         this.initializeCamera();
     }
 
@@ -116,7 +123,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onVideoSaved(@NonNull VideoCapture.OutputFileResults outputFileResults) {
         Log.i("Video Capture Begins",
-                "Video Capture has been started! Video will be saved in: " + capturedVideoOutputFilePath + "/" + FINGERTIP_VIDEO_FILENAME);
+                "Video Capture has been started! Video will be saved in: " + capturedVideoOutputDir + "/" + FINGERTIP_VIDEO_FILENAME);
     }
 
     @SuppressLint("RestrictedApi")
@@ -131,9 +138,12 @@ public class MainActivity extends AppCompatActivity
 
     private void measureHeartRate() {
         if(isCameraConfigured) {
+            this.HeartRate = 0.0f;
+            this.updateHeartRateEditText();
             this.startVideoCapture();
             Handler handler = new Handler();
-            handler.postDelayed(this::stopVideoCapture, VIDEO_RECORDING_DURATION);
+            handler.postDelayed(this::stopVideoCaptureAndComputeHeartRate, VIDEO_RECORDING_DURATION);
+            this.updateHeartRateEditText();
         }
     }
 
@@ -221,8 +231,7 @@ public class MainActivity extends AppCompatActivity
     @SuppressLint("RestrictedApi")
     private VideoCapture.OutputFileOptions getVideoOutputFileOptions() {
         return new VideoCapture.OutputFileOptions
-                .Builder(new File(this.capturedVideoOutputFilePath,
-                FINGERTIP_VIDEO_FILENAME))
+                .Builder(new File(capturedVideoOutputDir, FINGERTIP_VIDEO_FILENAME))
                 .build();
     }
 
@@ -240,6 +249,17 @@ public class MainActivity extends AppCompatActivity
         this.videoCapture.stopRecording();
         Log.d("Capture Stopped", "Video Capture Stopped");
         this.camera.getCameraControl().enableTorch(false);
-        heartRateMeasurementInProgress = false;
+        heartRateMeasurementInProgress = false;.
+    }
+
+    private void stopVideoCaptureAndComputeHeartRate() {
+        this.stopVideoCapture();
+        this.HeartRate = computeHeartRate(new File(capturedVideoOutputDir,
+                FINGERTIP_VIDEO_FILENAME));
+        this.updateHeartRateEditText();
+    }
+
+    private void updateHeartRateEditText() {
+        this.editText.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
     }
 }

@@ -12,7 +12,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import java.io.File;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 
 public class AppUtility {
@@ -104,5 +108,19 @@ public class AppUtility {
 
     public static Executor getExecutor(AppCompatActivity activity) {
         return ContextCompat.getMainExecutor(activity);
+    }
+
+    public static NumberFormat getDefaultNumberFormat() {
+        Locale loc = Locale.getDefault();
+        NumberFormat numberFormat = NumberFormat.getNumberInstance(loc);
+        numberFormat.setMinimumFractionDigits(2);
+        numberFormat.setMaximumFractionDigits(4);
+        numberFormat.setRoundingMode(RoundingMode.HALF_UP);
+        return numberFormat;
+    }
+
+    public static Float computeHeartRate(File videoFile) {
+        // TODO
+        return 60f;
     }
 }
