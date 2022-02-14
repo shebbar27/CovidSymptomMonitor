@@ -14,22 +14,32 @@
     <string name="crash_dialog_message">
         Unfortunately Covid-19 Symptom Monitor has stopped working!
     </string>
-    <string name="exit_dialog_title">Exiting App</string>
+    <string name="exit_dialog_title">Exiting App!</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
-    <string name="uploading_symptoms_data">Uploading Symptoms Data</string>
-    <string name="uploading_symptoms_data_success">Successfully Uploaded Symptoms Data</string>
-    <string name="uploading_measured_signs_data">Uploading Measured Signs Data</string>
+    <string name="uploading_symptoms_data">Uploading Symptoms Data.</string>
+    <string name="uploading_symptoms_data_success">Successfully Uploaded Symptoms!</string>
+    <string name="uploading_measured_signs_data">Uploading Measured Signs Data.</string>
     <string name="uploading_measured_signs_data_success">
-        Successfully Uploaded Measured Signs Data
+        Successfully Uploaded Measured Signs Data!
     </string>
     <string name="exit">Exit</string>
     <string name="alert_dialog_ok">OK</string>
     <string name="alert_dialog_yes">Yes</string>
     <string name="alert_dialog_no">No</string>
     <string name="empty_string" />
-    <string name="camera_permission_denied_alert_title">Camera Permission Denied</string>
+    <string name="camera_permission_denied_alert_title">Camera Permission Denied!</string>
     <string name="camera_permission_denied_alert_message">
         "Covid-19 Symptom Monitor app can't function without access to Camera! Go to Settings and Enable Camera Access. Exiting the app!"
+    </string>
+    <string name="video_saved_message">The captured video was successfully saved at :</string>
+    <string name="save_video_error_message">
+        There was an error in saving the video please try "Measure Heart Rate" again!
+    </string>
+    <string name="video_capture_started_message">
+        Video capturing started! Please press your finger softly on the camera lens while covering the flash light.
+    </string>
+    <string name="video_capture_completed_message">
+        Video was successfully completed! The preview of the recorded video will be played on the camera view.
     </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>

@@ -7,6 +7,17 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <VideoView
+        android:id="@+id/playback_video_view"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.120000005" />
+
     <LinearLayout
         android:id="@+id/measurement_layout"
         android:layout_width="wrap_content"
@@ -19,15 +30,18 @@
         app:layout_constraintVertical_bias="0.25">
 
         <androidx.camera.view.PreviewView
-            android:id="@+id/rear_camera_view"
+            android:id="@+id/camera_preview_view"
             android:layout_width="280dp"
             android:layout_height="280dp"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.497"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.408" />
+            app:layout_constraintVertical_bias="0.408">
+
+        </androidx.camera.view.PreviewView>
 
         <EditText
             android:id="@+id/heart_rate_textview"
