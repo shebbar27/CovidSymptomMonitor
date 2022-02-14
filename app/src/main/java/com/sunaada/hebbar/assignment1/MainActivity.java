@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity
         this.videoCapture.stopRecording();
         Log.d("Capture Stopped", "Video Capture Stopped");
         this.camera.getCameraControl().enableTorch(false);
-        heartRateMeasurementInProgress = false;.
+        heartRateMeasurementInProgress = false;
     }
 
     private void stopVideoCaptureAndComputeHeartRate() {
