@@ -6,7 +6,6 @@ import static com.sunaada.hebbar.assignment1.R.string.*;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
@@ -22,7 +21,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -41,13 +39,12 @@ import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@RequiresApi(api = Build.VERSION_CODES.S)
 public class MainActivity extends AppCompatActivity
         implements OnClickListener, VideoCapture.OnVideoSavedCallback {
 
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
-    private static final int VIDEO_RECORDING_DURATION = 15000;
+    private static final long VIDEO_RECORDING_DURATION = 45500;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -96,6 +93,9 @@ public class MainActivity extends AppCompatActivity
             case measure_heart_rate_button:
                 if(!heartRateMeasurementInProgress) {
                     this.measureHeartRate();
+                }
+                else{
+                    createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
                 }
 
                 break;
@@ -150,11 +150,12 @@ public class MainActivity extends AppCompatActivity
         createAndDisplayToast(this,
                 getString(save_video_error_message) + videoCaptureFile,
                 Toast.LENGTH_LONG);
+        this.heartRateMeasurementInProgress = false;
     }
 
     private void measureHeartRate() {
         if(isCameraConfigured) {
-            this.HeartRate = 0.0f;
+            this.HeartRate = 0f;
             this.updateHeartRateEditText();
             this.startVideoCapture();
             Handler handler = new Handler();
@@ -275,8 +276,10 @@ public class MainActivity extends AppCompatActivity
                 "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                         + "Current Thread: " + Thread.currentThread());
         if(videoCaptureFile.exists()) {
-            this.HeartRate = computeHeartRate(videoCaptureFile);
+            this.HeartRate = computeHeartRate(getApplicationContext(), videoCaptureFile);
             this.updateHeartRateEditText();
+            //createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
+            this.heartRateMeasurementInProgress = false;
         }
     }
 
@@ -297,7 +300,6 @@ public class MainActivity extends AppCompatActivity
         this.videoView.setOnCompletionListener(mediaPlayer -> {
             this.previewView.setVisibility(View.VISIBLE);
             this.videoView.setVisibility(View.INVISIBLE);
-            this.heartRateMeasurementInProgress = false;
         });
     }
 }

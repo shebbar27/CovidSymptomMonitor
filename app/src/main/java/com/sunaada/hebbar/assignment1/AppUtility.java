@@ -3,6 +3,10 @@ package com.sunaada.hebbar.assignment1;
 import static android.content.DialogInterface.*;
 import static com.sunaada.hebbar.assignment1.R.string.*;
 
+import android.graphics.Bitmap;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -16,6 +20,7 @@ import java.io.File;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
 
@@ -119,8 +124,70 @@ public class AppUtility {
         return numberFormat;
     }
 
-    public static Float computeHeartRate(File videoFile) {
-        // TODO
-        return 60f;
+    public static Float computeHeartRate(android.content.Context context, File videoFile) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(videoFile.getAbsolutePath());
+        Uri videoFileUri = Uri.fromFile(videoFile);
+        MediaPlayer mediaPlayer = MediaPlayer.create(context, videoFileUri);
+
+        // values for computation
+        // discard first and last 5 seconds since it can have noise and disturbances due to
+        // the movement finger and auto focus feature of camera
+        final float timeOffset_s = 5f;
+        // total duration of actual captured video
+        final float totalDuration_ms = mediaPlayer.getDuration();
+        // multiplier to convert seconds to microseconds
+        final float microSecondsMultiplier = 1000000f;
+        // multiplier to convert seconds to milliseconds
+        final float milliSecondsMultiplier = 1000f;
+        // start time of the portion of the video considered for processing
+        final float startTime_us = timeOffset_s * microSecondsMultiplier;
+        // end time of the portion of the video considered for processing
+        final float endTime_us = (totalDuration_ms/milliSecondsMultiplier - timeOffset_s) * microSecondsMultiplier;
+        // frames per second of captured video
+        final float fps = 25f;
+        // total time span of the portion of the video considered for processing
+        final float timeSpan_s = (endTime_us - startTime_us)/microSecondsMultiplier;
+        // total number of frames considered for processing
+        final float numberOfFrames = fps * timeSpan_s;
+        // time increments at which frames are sampled
+        final float sampleIncrement_us = microSecondsMultiplier/fps;
+        // multiplier to convert heart rate per 1 minute
+        final float heartRateMultiplier = timeSpan_s == 0? 0f : 60f/timeSpan_s;
+
+        // 2D bitmap image subsampling parameters
+        final int width = 100, height = 100, xSpacing = 10, ySpacing = 19;
+        float i = startTime_us, j=0;
+        List<Float> averageRedPixels = new ArrayList<>();
+        while(j < numberOfFrames && i < endTime_us) {
+            Bitmap bitmap = retriever.getFrameAtTime((int)i, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            float redPixelsCumulative = 0f;
+            // row of 2D bitmap image
+            for(int x=0; x<width * xSpacing; x+=xSpacing) {
+                // column of 2D bitmap image
+                for(int y=0; y<height * ySpacing; y+=ySpacing) {
+                    int pixel = bitmap.getPixel(x, y);
+                    redPixelsCumulative += (((pixel >> 16) & 0xFF)*5 + (pixel >> 8) & 0xFF + pixel & 0xFF)/7.0f;
+                }
+            }
+
+            averageRedPixels.add(redPixelsCumulative/(height * width));
+            i += sampleIncrement_us;
+            j++;
+        }
+
+        final float threshold = 0.05f;
+        int heartRate = 0;
+        Float prevValue = averageRedPixels.get(0);
+        for(int k=1; k<averageRedPixels.size(); k++) {
+            if(Math.abs(prevValue - averageRedPixels.get(k)) > threshold) {
+                heartRate++;
+                prevValue = averageRedPixels.get(k);
+            }
+        }
+
+        mediaPlayer.release();
+        retriever.release();
+        return heartRate * heartRateMultiplier;
     }
 }

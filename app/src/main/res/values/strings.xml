@@ -41,6 +41,12 @@
     <string name="video_capture_completed_message">
         Video was successfully completed! The preview of the recorded video will be played on the camera view.
     </string>
+    <string name="heart_rate_measurement_completed_message">
+        Heart Rate Measurement completed successfully!
+    </string>
+    <string name="heart_rate_measurement_in_progress">
+        Heart Rate Measurement is still in Progress! Please wait.
+    </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>
