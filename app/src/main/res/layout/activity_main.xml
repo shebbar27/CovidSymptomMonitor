@@ -9,14 +9,13 @@
 
     <VideoView
         android:id="@+id/playback_video_view"
-        android:layout_width="280dp"
+        android:layout_width="210dp"
         android:layout_height="280dp"
-        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.120000005" />
+        app:layout_constraintVertical_bias="0.117" />
 
     <LinearLayout
         android:id="@+id/measurement_layout"
@@ -31,9 +30,8 @@
 
         <androidx.camera.view.PreviewView
             android:id="@+id/camera_preview_view"
-            android:layout_width="280dp"
+            android:layout_width="210dp"
             android:layout_height="280dp"
-            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.497"
@@ -43,25 +41,17 @@
 
         </androidx.camera.view.PreviewView>
 
-        <EditText
+        <TextView
             android:id="@+id/heart_rate_textview"
-            style="@style/Widget.AppCompat.Light.AutoCompleteTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints=""
             android:ems="10"
             android:enabled="false"
             android:hint="@string/heart_rate"
-            android:inputType="numberDecimal"
             android:minHeight="48dp"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
-            android:textColorHint="#757575"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.497"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.653" />
+            android:textColorHint="#757575" />
 
         <Button
             android:id="@+id/measure_heart_rate_button"
@@ -78,25 +68,17 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.723" />
 
-        <EditText
+        <TextView
             android:id="@+id/respiratory_rate_textview"
-            style="@style/Widget.AppCompat.Light.AutoCompleteTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints=""
             android:ems="10"
             android:enabled="false"
             android:hint="@string/respiratory_rate"
-            android:inputType="numberDecimal"
             android:minHeight="48dp"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
-            android:textColorHint="#757575"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.482"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.812" />
+            android:textColorHint="#757575" />
 
         <Button
             android:id="@+id/measure_respiratory_rate_button"

@@ -26,8 +26,8 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.EditText;
 import android.widget.MediaController;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity
     private VideoCapture videoCapture;
     private Camera camera;
     private Float HeartRate;
-    private EditText editText;
+    private TextView textView;
     private ExecutorService executorService;
 
     @Override
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity
         );
 
         videoCaptureFile = new File(getApplicationContext().getFilesDir(), FINGERTIP_VIDEO_FILENAME);
-        this.editText = findViewById(heart_rate_textview);
+        this.textView = findViewById(heart_rate_textview);
         this.executorService = Executors.newCachedThreadPool();
         this.initializeCamera();
     }
@@ -284,7 +284,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateHeartRateEditText() {
-        this.editText.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
+        this.textView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
     }
 
     private void playbackCapturedVideo() {
