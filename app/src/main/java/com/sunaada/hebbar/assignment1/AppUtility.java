@@ -125,6 +125,12 @@ public class AppUtility {
     }
 
     public static Float computeHeartRate(android.content.Context context, File videoFile) {
+        if(!videoFile.exists()) {
+            Log.d("Video File Missing",
+                    "The video file does not exist or the video file path is invalid");
+            return 0f;
+        }
+
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(videoFile.getAbsolutePath());
         Uri videoFileUri = Uri.fromFile(videoFile);

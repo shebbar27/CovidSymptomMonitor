@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
-    private static final long VIDEO_RECORDING_DURATION = 45500;
+    private static final long VIDEO_RECORDING_DURATION = 46000;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -135,8 +135,11 @@ public class MainActivity extends AppCompatActivity
         createAndDisplayToast(this,
                 getString(R.string.video_saved_message) + videoCaptureFile,
                 Toast.LENGTH_LONG);
-        executorService.execute(this::ComputeAndUpdateHeartRate);
         this.playbackCapturedVideo();
+        Log.d("Current Thread",
+                "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                        + "Current Thread: " + Thread.currentThread());
+        this.computeAndUpdateHeartRate(this::updateHeartRate);
     }
 
     @SuppressLint("RestrictedApi")
@@ -271,20 +274,35 @@ public class MainActivity extends AppCompatActivity
         this.camera.getCameraControl().enableTorch(false);
     }
 
-    private void ComputeAndUpdateHeartRate() {
-        Log.d("Current Thread",
-                "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
-                        + "Current Thread: " + Thread.currentThread());
-        if(videoCaptureFile.exists()) {
-            this.HeartRate = computeHeartRate(getApplicationContext(), videoCaptureFile);
-            this.updateHeartRateTextView();
-            //createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
-            this.heartRateMeasurementInProgress = false;
-        }
+    private void computeAndUpdateHeartRate(final ExecutorServiceCallBackInterface<Float> callBack) {
+        executorService.execute(() -> {
+            Log.d("Current Thread",
+                    "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                            + "Current Thread: " + Thread.currentThread());
+            try {
+                Float heartRate = computeHeartRate(getApplicationContext(), videoCaptureFile);
+                callBack.onExecuteTaskComplete(heartRate);
+            } catch (Exception e) {
+                Float errorHeartRate = 0f;
+                callBack.onExecuteTaskComplete(errorHeartRate);
+            }
+        });
     }
 
     private void updateHeartRateTextView() {
         this.textView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
+    }
+
+    private void updateHeartRate(Float heartRate) {
+        runOnUiThread(() -> {
+            Log.d("Current Thread",
+                    "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                            + "Current Thread: " + Thread.currentThread());
+            this.HeartRate = heartRate;
+            this.updateHeartRateTextView();
+            createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
+            this.heartRateMeasurementInProgress = false;
+        });
     }
 
     private void playbackCapturedVideo() {
