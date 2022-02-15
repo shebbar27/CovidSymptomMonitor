@@ -47,6 +47,9 @@
     <string name="heart_rate_measurement_in_progress">
         Heart Rate Measurement is still in Progress! Please wait.
     </string>
+    <string name="respiratory_rate_measurement_in_progress">
+        Respiratory Rate Measurement is still in Progress! Please wait.
+    </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>

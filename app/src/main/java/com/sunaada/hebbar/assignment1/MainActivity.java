@@ -58,10 +58,13 @@ public class MainActivity extends AppCompatActivity
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private boolean isCameraConfigured = false;
     private boolean heartRateMeasurementInProgress = false;
+    private boolean respiratoryRateMeasurementInProgress = false;
     private VideoCapture videoCapture;
     private Camera camera;
     private Float HeartRate;
-    private TextView textView;
+    private Float RespiratoryRate;
+    private TextView heartRateTextView;
+    private TextView respiratoryRateTextView;
     private ExecutorService executorService;
 
     @Override
@@ -81,7 +84,8 @@ public class MainActivity extends AppCompatActivity
         );
 
         videoCaptureFile = new File(getApplicationContext().getFilesDir(), FINGERTIP_VIDEO_FILENAME);
-        this.textView = findViewById(heart_rate_textview);
+        this.heartRateTextView = findViewById(heart_rate_textview);
+        this.respiratoryRateTextView = findViewById(respiratory_rate_textview);
         this.executorService = Executors.newCachedThreadPool();
         this.initializeCamera();
     }
@@ -91,8 +95,13 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View view) {
         switch (view.getId()) {
             case measure_heart_rate_button:
-                if(!heartRateMeasurementInProgress) {
-                    this.measureHeartRate();
+                if(!this.heartRateMeasurementInProgress) {
+                    if(this.respiratoryRateMeasurementInProgress) {
+                        createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
+                    }
+                    else {
+                        this.measureHeartRate();
+                    }
                 }
                 else{
                     createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
@@ -100,7 +109,17 @@ public class MainActivity extends AppCompatActivity
 
                 break;
             case measure_respiratory_rate_button:
-                this.measureRespiratoryRate();
+                if(!this.respiratoryRateMeasurementInProgress) {
+                    if(this.heartRateMeasurementInProgress) {
+                        createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
+                    }
+                    else {
+                        this.measureRespiratoryRate();
+                    }
+                }
+                else{
+                    createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
+                }
                 break;
             case upload_signs_button:
                 this.uploadSignsData();
@@ -157,7 +176,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureHeartRate() {
-        if(isCameraConfigured) {
+        if(this.isCameraConfigured) {
+            this.heartRateMeasurementInProgress = true;
             this.HeartRate = 0f;
             this.updateHeartRateTextView();
             this.startVideoCapture();
@@ -167,6 +187,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureRespiratoryRate() {
+        this.respiratoryRateMeasurementInProgress = true;
+        this.RespiratoryRate = 0f;
+        this.updateRespiratoryRateTextView();
         // TODO
     }
 
@@ -260,7 +283,6 @@ public class MainActivity extends AppCompatActivity
     private void startVideoCapture() {
         Log.d("Capture Started", "Video Capture Started");
         createAndDisplayToast(this, getString(R.string.video_capture_started_message), Toast.LENGTH_LONG);
-        heartRateMeasurementInProgress = true;
         this.camera.getCameraControl().enableTorch(true);
         VideoCapture.OutputFileOptions outputFileOptions = this.getVideoOutputFileOptions();
         this.videoCapture.startRecording(outputFileOptions, getExecutor(this), this);
@@ -290,7 +312,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateHeartRateTextView() {
-        this.textView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
+        this.heartRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
     }
 
     private void updateHeartRate(Float heartRate) {
@@ -319,5 +341,9 @@ public class MainActivity extends AppCompatActivity
             this.previewView.setVisibility(View.VISIBLE);
             this.videoView.setVisibility(View.INVISIBLE);
         });
+    }
+
+    private void updateRespiratoryRateTextView() {
+        this.respiratoryRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.RespiratoryRate));
     }
 }
