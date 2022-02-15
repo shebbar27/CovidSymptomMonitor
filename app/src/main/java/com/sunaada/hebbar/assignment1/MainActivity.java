@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity
     private void measureHeartRate() {
         if(isCameraConfigured) {
             this.HeartRate = 0f;
-            this.updateHeartRateEditText();
+            this.updateHeartRateTextView();
             this.startVideoCapture();
             Handler handler = new Handler();
             handler.postDelayed(this::stopVideoCapture, VIDEO_RECORDING_DURATION);
@@ -277,13 +277,13 @@ public class MainActivity extends AppCompatActivity
                         + "Current Thread: " + Thread.currentThread());
         if(videoCaptureFile.exists()) {
             this.HeartRate = computeHeartRate(getApplicationContext(), videoCaptureFile);
-            this.updateHeartRateEditText();
+            this.updateHeartRateTextView();
             //createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
             this.heartRateMeasurementInProgress = false;
         }
     }
 
-    private void updateHeartRateEditText() {
+    private void updateHeartRateTextView() {
         this.textView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
     }
 
