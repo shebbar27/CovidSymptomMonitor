@@ -84,7 +84,7 @@
             android:id="@+id/measure_respiratory_rate_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
+            android:minHeight="64dp"
             android:text="@string/measure_respiratory_rate"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
