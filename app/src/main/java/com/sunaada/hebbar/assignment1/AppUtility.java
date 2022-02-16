@@ -173,10 +173,14 @@ public class AppUtility {
                 // column of 2D bitmap image
                 for(int y=0; y<height * ySpacing; y+=ySpacing) {
                     int pixel = bitmap.getPixel(x, y);
-                    redPixelsCumulative += (((pixel >> 16) & 0xFF)*5 + (pixel >> 8) & 0xFF + pixel & 0xFF)/7.0f;
+                    // to calculate weighted average of red, green, and blue pixel values with
+                    // ratio 5:1:1, add all pixel values with the respective multipliers and divide
+                    // by the 7
+                    redPixelsCumulative += (((pixel >> 16) & 0xFF) * 5 + (pixel >> 8) & 0xFF + pixel & 0xFF)/7.0f;
                 }
             }
 
+            // divide the sum of all pixel values with the total number of pixels considered
             averageRedPixels.add(redPixelsCumulative/(height * width));
             i += sampleIncrement_us;
             j++;
