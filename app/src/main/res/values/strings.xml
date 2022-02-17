@@ -35,8 +35,8 @@
     <string name="save_video_error_message">
         There was an error in saving the video please try "Measure Heart Rate" again!
     </string>
-    <string name="video_capture_started_message">
-        Video capturing started! Please press your finger softly on the camera lens while covering the flash light.
+    <string name="heart_rate_measurement_started_message">
+        Video capturing has been started, the Heart Rate Measurement will begin in 5 seconds! Please press your finger softly on the camera lens while covering the flash light.
     </string>
     <string name="video_capture_completed_message">
         Video was successfully completed! The preview of the recorded video will be played on the camera view.
@@ -49,6 +49,12 @@
     </string>
     <string name="respiratory_rate_measurement_in_progress">
         Respiratory Rate Measurement is still in Progress! Please wait.
+    </string>
+    <string name="respiratory_rate_measurement_started">
+        Respiratory Rate Measurement will begin in 5 seconds! Please place your phone on your chest for a period of 45 seconds and breathe normally, the phone will vibrate when the measurement is completed!
+    </string>
+    <string name="respiratory_rate_measurement_completed">
+        Respiratory Rate Measurement completed successfully!
     </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>

@@ -18,8 +18,13 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,13 +43,16 @@ import java.util.ArrayList;
 import java.io.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity
         implements OnClickListener, VideoCapture.OnVideoSavedCallback {
 
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
-    private static final long VIDEO_RECORDING_DURATION = 46000;
+    private static final long VIDEO_RECORDING_DURATION_MILLISECONDS = 46000;
+    private static final long ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS = 45000;
+    private static final long MEASUREMENT_OFFSET_TIME_MILLISECONDS = 5000;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -56,16 +64,16 @@ public class MainActivity extends AppCompatActivity
     private PreviewView previewView;
     private VideoView videoView;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    private boolean isCameraConfigured = false;
-    private boolean heartRateMeasurementInProgress = false;
-    private boolean respiratoryRateMeasurementInProgress = false;
     private VideoCapture videoCapture;
     private Camera camera;
-    private Float HeartRate;
-    private Float RespiratoryRate;
+    private Float heartRate;
+    private Float respiratoryRate;
     private TextView heartRateTextView;
     private TextView respiratoryRateTextView;
     private ExecutorService executorService;
+    private boolean isCameraConfigured = false;
+    private boolean heartRateMeasurementInProgress = false;
+    private boolean respiratoryRateMeasurementInProgress = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -175,22 +183,45 @@ public class MainActivity extends AppCompatActivity
         this.heartRateMeasurementInProgress = false;
     }
 
-    private void measureHeartRate() {
-        if(this.isCameraConfigured) {
-            this.heartRateMeasurementInProgress = true;
-            this.HeartRate = 0f;
-            this.updateHeartRateTextView();
-            this.startVideoCapture();
-            Handler handler = new Handler();
-            handler.postDelayed(this::stopVideoCapture, VIDEO_RECORDING_DURATION);
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(this.executorService != null) {
+            this.executorService.shutdown();
+            try {
+                if (!this.executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                    this.executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                this.executorService.shutdownNow();
+            }
         }
+    }
+
+    private void measureHeartRate() {
+        if(!this.isCameraConfigured) {
+            this.initializeCamera();
+        }
+
+        this.heartRateMeasurementInProgress = true;
+        this.heartRate = Float.NaN;
+        this.updateHeartRateTextView();
+        createAndDisplayToast(this,
+                getString(heart_rate_measurement_started_message),
+                Toast.LENGTH_LONG);
+        Handler handler = new Handler();
+        this.startVideoCapture();
+        handler.postDelayed(this::stopVideoCapture, VIDEO_RECORDING_DURATION_MILLISECONDS);
     }
 
     private void measureRespiratoryRate() {
         this.respiratoryRateMeasurementInProgress = true;
-        this.RespiratoryRate = 0f;
+        this.respiratoryRate = Float.NaN;
         this.updateRespiratoryRateTextView();
-        // TODO
+        createAndDisplayToast(this,
+                getString(respiratory_rate_measurement_started),
+                Toast.LENGTH_LONG);
+        this.executorService.execute(this::readAccelerometerSensorAndUpdateRespiratoryRate);
     }
 
     private void uploadSignsData() {
@@ -282,7 +313,6 @@ public class MainActivity extends AppCompatActivity
     @SuppressLint("RestrictedApi")
     private void startVideoCapture() {
         Log.d("Capture Started", "Video Capture Started");
-        createAndDisplayToast(this, getString(R.string.video_capture_started_message), Toast.LENGTH_LONG);
         this.camera.getCameraControl().enableTorch(true);
         VideoCapture.OutputFileOptions outputFileOptions = this.getVideoOutputFileOptions();
         this.videoCapture.startRecording(outputFileOptions, getExecutor(this), this);
@@ -302,17 +332,17 @@ public class MainActivity extends AppCompatActivity
                     "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                             + "Current Thread: " + Thread.currentThread());
             try {
-                Float heartRate = computeHeartRate(getApplicationContext(), videoCaptureFile);
+                Float heartRate = computeHeartRate(getApplicationContext(), videoCaptureFile, MEASUREMENT_OFFSET_TIME_MILLISECONDS);
                 callBack.onExecuteTaskComplete(heartRate);
             } catch (Exception e) {
-                Float errorHeartRate = 0f;
+                Float errorHeartRate = Float.NaN;
                 callBack.onExecuteTaskComplete(errorHeartRate);
             }
         });
     }
 
     private void updateHeartRateTextView() {
-        this.heartRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.HeartRate));
+        this.heartRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.heartRate));
     }
 
     private void updateHeartRate(Float heartRate) {
@@ -320,7 +350,7 @@ public class MainActivity extends AppCompatActivity
             Log.d("Current Thread",
                     "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                             + "Current Thread: " + Thread.currentThread());
-            this.HeartRate = heartRate;
+            this.heartRate = heartRate;
             this.updateHeartRateTextView();
             createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
             this.heartRateMeasurementInProgress = false;
@@ -344,6 +374,65 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void updateRespiratoryRateTextView() {
-        this.respiratoryRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.RespiratoryRate));
+        this.respiratoryRateTextView.setText(DEFAULT_NUMBER_FORMAT.format(this.respiratoryRate));
+    }
+
+    private void updateRespiratoryRate(Float respiratoryRate) {
+        runOnUiThread(() -> {
+            Log.d("Current Thread",
+                    "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                            + "Current Thread: " + Thread.currentThread());
+            this.respiratoryRate = respiratoryRate;
+            this.updateRespiratoryRateTextView();
+            createAndDisplayToast(this, getString(respiratory_rate_measurement_completed), Toast.LENGTH_LONG);
+            this.respiratoryRateMeasurementInProgress = false;
+        });
+    }
+
+    private void readAccelerometerSensorAndUpdateRespiratoryRate() {
+        Log.d("Accelerometer Started", "Started capturing accelerometer data");
+        Log.d("Current Thread",
+                    "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                            + "Current Thread: " + Thread.currentThread());
+        SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        Sensor accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        AccelerometerData accelerometerData = new AccelerometerData();
+        long accelerometerDataCaptureStartTime = System.currentTimeMillis();
+        SensorEventListener sensorEventListener = new SensorEventListener() {
+            @Override
+            public void onSensorChanged(SensorEvent sensorEvent) {
+                if(System.currentTimeMillis() < accelerometerDataCaptureStartTime
+                        + MEASUREMENT_OFFSET_TIME_MILLISECONDS) {
+                    // for start time and end time discard first and last few seconds as provided
+                    // by the offset_milliseconds since it can have noise and disturbances due to
+                    // the movement of phone
+                    return;
+                }
+
+                Sensor changedSensor = sensorEvent.sensor;
+                if(changedSensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                    accelerometerData.appendAxesValues(sensorEvent);
+                }
+
+                if(System.currentTimeMillis() > accelerometerDataCaptureStartTime
+                        + ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS
+                        - MEASUREMENT_OFFSET_TIME_MILLISECONDS) {
+                    sensorManager.unregisterListener(this);
+                    Log.d("Accelerometer Complete", "Capturing accelerometer data completed");
+                    float measuredRespiratoryRate = computeRespiratoryRate(accelerometerData,
+                            ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS,
+                            MEASUREMENT_OFFSET_TIME_MILLISECONDS);
+                    Log.d("Respiratory Rate Complete", "Respiratory Rate Measurement completed successfully");
+                    updateRespiratoryRate(measuredRespiratoryRate);
+                }
+            }
+
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+            }
+        };
+
+        sensorManager.registerListener(sensorEventListener, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 }

@@ -20,6 +20,7 @@ import java.io.File;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
@@ -124,7 +125,7 @@ public class AppUtility {
         return numberFormat;
     }
 
-    public static Float computeHeartRate(android.content.Context context, File videoFile) {
+    public static Float computeHeartRate(android.content.Context context, File videoFile, long offset_milliseconds) {
         if(!videoFile.exists()) {
             Log.d("Video File Missing",
                     "The video file does not exist or the video file path is invalid");
@@ -137,19 +138,19 @@ public class AppUtility {
         MediaPlayer mediaPlayer = MediaPlayer.create(context, videoFileUri);
 
         // values for computation
-        // discard first and last 5 seconds since it can have noise and disturbances due to
-        // the movement finger and auto focus feature of camera
-        final float timeOffset_s = 5f;
         // total duration of actual captured video
         final float totalDuration_ms = mediaPlayer.getDuration();
         // multiplier to convert seconds to microseconds
         final float microSecondsMultiplier = 1000000f;
         // multiplier to convert seconds to milliseconds
         final float milliSecondsMultiplier = 1000f;
+        // for start time and end time discard first and last few seconds as provided by the
+        // offset_milliseconds since it can have noise and disturbances due to the movement finger
+        // and auto focus feature of camera
         // start time of the portion of the video considered for processing
-        final float startTime_us = timeOffset_s * microSecondsMultiplier;
+        final float startTime_us = offset_milliseconds * milliSecondsMultiplier;
         // end time of the portion of the video considered for processing
-        final float endTime_us = (totalDuration_ms/milliSecondsMultiplier - timeOffset_s) * microSecondsMultiplier;
+        final float endTime_us = (totalDuration_ms - offset_milliseconds) * milliSecondsMultiplier;
         // frames per second of captured video
         final float fps = 25f;
         // total time span of the portion of the video considered for processing
@@ -199,5 +200,110 @@ public class AppUtility {
         mediaPlayer.release();
         retriever.release();
         return heartRate * heartRateMultiplier;
+    }
+
+    public static Float computeRespiratoryRate(AccelerometerData accelerometerData,
+                                               long accelerometerDataCaptureDuration_ms,
+                                               long measurementOffsetTime_ms) {
+        float result = Float.NaN;
+        final int ratio_x = 1, ratio_y = 1, ratio_z = 5;
+        float[] processedAxisValues;
+        if(accelerometerData.isDataValid()) {
+            processedAxisValues = accelerometerData.getWeightedAverageAxisValues(ratio_x, ratio_y, ratio_z);
+            Log.d("Averaged Accelerometer Data", Arrays.toString(processedAxisValues));
+            processedAxisValues = applyMovingAverageWindowFilter(processedAxisValues);
+            Log.d("Smoothened Accelerometer Data", Arrays.toString(processedAxisValues));
+            result = countPeaks(processedAxisValues) * 60000f /(accelerometerDataCaptureDuration_ms - 2 * measurementOffsetTime_ms);
+        }
+
+        return result;
+    }
+
+    private static float getMovingAverageScaledValue(float actual, float movingAverage) {
+        final float alpha = 0.65f;
+        return (float)(Math.exp(alpha) * actual + Math.exp(1-alpha) * movingAverage);
+    }
+
+    private static float[] applyMovingAverageWindowFilter(float[] values) {
+        int windowSize = 20;
+        float[] result = new float[values.length - 2 * (windowSize/2)];
+        float sum = 0f;
+        for(int i=0; i<windowSize; i++) {
+            sum += values[i];
+        }
+
+        for(int i=windowSize/2; i<values.length - windowSize/2; i++) {
+            result[i - windowSize/2] = getMovingAverageScaledValue(result[i - windowSize/2],sum/windowSize);
+            sum -= values[i - windowSize/2];
+            sum += values[i + windowSize/2];
+        }
+
+        return result;
+    }
+
+    private static int countPeaks(float[] a){
+        int num;
+        int prevPeak = 0;
+        int curPeak = 1;
+        boolean goingUp = true;
+        float threshold = 0.2f * (findMax(a) - findMin(a));
+        ArrayList<Integer> peaks = new ArrayList<>();
+        while(curPeak < a.length) {
+            if (a[curPeak] > a[curPeak - 1]) {
+                if(!goingUp){
+                    prevPeak = curPeak - 1;
+                    goingUp = true;
+                }
+            }
+            else {
+                if(goingUp && (a[curPeak-1] - a[prevPeak] > threshold)){
+                    peaks.add(curPeak - 1);
+                    goingUp = false;
+                }
+
+                prevPeak = curPeak;
+            }
+
+            curPeak++;
+        }
+
+        num = peaks.size();
+        Log.d("Peaks Found", Arrays.toString(peaks.toArray()));
+        return num;
+    }
+
+    private static float findMin(float[] a){
+        if(a.length == 0) {
+            return -1f;
+        }
+
+        float min = a[0];
+        int i = 1;
+        while(i < a.length){
+            if(a[i] < min){
+                min = a[i];
+            }
+
+            i++;
+        }
+
+        return min;
+    }
+
+    private static float findMax(float[] a){
+        if(a.length == 0) {
+            return -1f;
+        }
+
+        float max = a[0];
+        int i = 1;
+        while(i < a.length){
+            if(a[i] > max){
+                max = a[i];
+            }
+            i++;
+        }
+
+        return max;
     }
 }
