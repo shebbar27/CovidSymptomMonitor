@@ -285,7 +285,9 @@ public class MainActivity extends AppCompatActivity
         this.videoCapture = new VideoCapture.Builder().build();
         this.videoView = findViewById(playback_video_view);
         this.videoView.setVisibility(View.INVISIBLE);
-        requestPermissions(PERMISSIONS, REQUEST_PERMISSIONS_CODE);
+        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            requestPermissions(PERMISSIONS, REQUEST_PERMISSIONS_CODE);
+        }
     }
 
     private void configureAndStartCameraPreview() {
@@ -440,7 +442,7 @@ public class MainActivity extends AppCompatActivity
                     float measuredRespiratoryRate = computeRespiratoryRate(accelerometerData,
                             ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS,
                             MEASUREMENT_OFFSET_TIME_MILLISECONDS);
-                    Log.d("Respiratory Rate Complete", "Respiratory Rate Measurement completed successfully");
+                    Log.d("Resp Measure Complete", "Respiratory Rate Measurement completed successfully");
                     updateRespiratoryRate(measuredRespiratoryRate);
                 }
             }
