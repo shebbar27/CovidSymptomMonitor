@@ -28,6 +28,8 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -53,6 +55,8 @@ public class MainActivity extends AppCompatActivity
     private static final long VIDEO_RECORDING_DURATION_MILLISECONDS = 46000;
     private static final long ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS = 45000;
     private static final long MEASUREMENT_OFFSET_TIME_MILLISECONDS = 5000;
+    private static final long VIBRATION_DURATION_SHORT = 500;
+    private static final long VIBRATION_DURATION_LONG = 1000;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -71,9 +75,11 @@ public class MainActivity extends AppCompatActivity
     private TextView heartRateTextView;
     private TextView respiratoryRateTextView;
     private ExecutorService executorService;
+    private Vibrator vibrator;
     private boolean isCameraConfigured = false;
     private boolean heartRateMeasurementInProgress = false;
     private boolean respiratoryRateMeasurementInProgress = false;
+    private boolean isSignsDataUploaded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +100,7 @@ public class MainActivity extends AppCompatActivity
         videoCaptureFile = new File(getApplicationContext().getFilesDir(), FINGERTIP_VIDEO_FILENAME);
         this.heartRateTextView = findViewById(heart_rate_textview);
         this.respiratoryRateTextView = findViewById(respiratory_rate_textview);
+        this.vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         this.executorService = Executors.newCachedThreadPool();
         this.initializeCamera();
     }
@@ -103,31 +110,10 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View view) {
         switch (view.getId()) {
             case measure_heart_rate_button:
-                if(!this.heartRateMeasurementInProgress) {
-                    if(this.respiratoryRateMeasurementInProgress) {
-                        createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
-                    }
-                    else {
-                        this.measureHeartRate();
-                    }
-                }
-                else{
-                    createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
-                }
-
+                this.measureHeartRate();
                 break;
             case measure_respiratory_rate_button:
-                if(!this.respiratoryRateMeasurementInProgress) {
-                    if(this.heartRateMeasurementInProgress) {
-                        createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
-                    }
-                    else {
-                        this.measureRespiratoryRate();
-                    }
-                }
-                else{
-                    createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
-                }
+                this.measureRespiratoryRate();
                 break;
             case upload_signs_button:
                 this.uploadSignsData();
@@ -199,6 +185,16 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureHeartRate() {
+        if(this.heartRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
+            return;
+        }
+
+        if(this.respiratoryRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
+            return;
+        }
+
         if(!this.isCameraConfigured) {
             this.initializeCamera();
         }
@@ -215,12 +211,23 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureRespiratoryRate() {
+        if(this.heartRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
+            return;
+        }
+
+        if(this.respiratoryRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
+            return;
+        }
+
         this.respiratoryRateMeasurementInProgress = true;
         this.respiratoryRate = Float.NaN;
         this.updateRespiratoryRateTextView();
         createAndDisplayToast(this,
                 getString(respiratory_rate_measurement_started),
                 Toast.LENGTH_LONG);
+        this.vibrateDeviceDefault(VIBRATION_DURATION_SHORT);
         this.executorService.execute(this::readAccelerometerSensorAndUpdateRespiratoryRate);
     }
 
@@ -231,9 +238,17 @@ public class MainActivity extends AppCompatActivity
         // TODO
         createAndDisplayToast(this,
                 getString(uploading_measured_signs_data_success));
+        this.isSignsDataUploaded = true;
     }
 
     private void switchToSymptomLoggingActivity() {
+        if(!this.isSignsDataUploaded) {
+            createAndDisplayToast(this,
+                    getString(symptoms_navigation_prerequisite_message),
+                    Toast.LENGTH_LONG);
+            return;
+        }
+
         try {
             Intent intent = new Intent(this, SymptomLoggingActivity.class);
             this.startActivity(intent);
@@ -313,6 +328,7 @@ public class MainActivity extends AppCompatActivity
     @SuppressLint("RestrictedApi")
     private void startVideoCapture() {
         Log.d("Capture Started", "Video Capture Started");
+        this.vibrateDeviceDefault(VIBRATION_DURATION_SHORT);
         this.camera.getCameraControl().enableTorch(true);
         VideoCapture.OutputFileOptions outputFileOptions = this.getVideoOutputFileOptions();
         this.videoCapture.startRecording(outputFileOptions, getExecutor(this), this);
@@ -354,6 +370,7 @@ public class MainActivity extends AppCompatActivity
             this.updateHeartRateTextView();
             createAndDisplayToast(this, getString(heart_rate_measurement_completed_message), Toast.LENGTH_LONG);
             this.heartRateMeasurementInProgress = false;
+            this.vibrateDeviceDefault(VIBRATION_DURATION_LONG);
         });
     }
 
@@ -386,6 +403,7 @@ public class MainActivity extends AppCompatActivity
             this.updateRespiratoryRateTextView();
             createAndDisplayToast(this, getString(respiratory_rate_measurement_completed), Toast.LENGTH_LONG);
             this.respiratoryRateMeasurementInProgress = false;
+            this.vibrateDeviceDefault(VIBRATION_DURATION_LONG);
         });
     }
 
@@ -434,5 +452,20 @@ public class MainActivity extends AppCompatActivity
         };
 
         sensorManager.registerListener(sensorEventListener, accelerometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    private void vibrateDeviceDefault(long duration) {
+        final VibrationEffect vibrationEffect1;
+
+        // this is the only type of the vibration which requires system version Oreo (API 26)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+
+            // this effect creates the vibration of default amplitude for 1000ms(1 sec)
+            vibrationEffect1 = VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE);
+
+            // it is safe to cancel other vibrations currently taking place
+            this.vibrator.cancel();
+            this.vibrator.vibrate(vibrationEffect1);
+        }
     }
 }

@@ -56,6 +56,9 @@
     <string name="respiratory_rate_measurement_completed">
         Respiratory Rate Measurement completed successfully!
     </string>
+    <string name="symptoms_navigation_prerequisite_message">
+        Please Measure Heart Rate and Respiratory Rate and Upload Signs Data before navigating to Symptoms!
+    </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>
