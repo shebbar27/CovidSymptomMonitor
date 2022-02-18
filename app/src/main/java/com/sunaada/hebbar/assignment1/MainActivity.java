@@ -55,9 +55,10 @@ public class MainActivity extends AppCompatActivity
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
     private static final long VIDEO_RECORDING_DURATION_MILLISECONDS = 46000;
     private static final long ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS = 45000;
-    private static final long MEASUREMENT_OFFSET_TIME_MILLISECONDS = 5000;
-    private static final long VIBRATION_DURATION_SHORT = 500;
-    private static final long VIBRATION_DURATION_LONG = 1000;
+    private static final long VIDEO_OFFSET_TIME_MILLISECONDS = 12000;
+    private static final long ACCELEROMETER_OFFSET_TIME_MILLISECONDS = 7000;
+    private static final long VIBRATION_DURATION_SHORT = 250;
+    private static final long VIBRATION_DURATION_LONG = 500;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -380,7 +381,7 @@ public class MainActivity extends AppCompatActivity
                     "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                             + "Current Thread: " + Thread.currentThread());
             try {
-                Float heartRate = computeHeartRate(getApplicationContext(), videoCaptureFile, MEASUREMENT_OFFSET_TIME_MILLISECONDS);
+                Float heartRate = computeHeartRate(getApplicationContext(), videoCaptureFile, VIDEO_OFFSET_TIME_MILLISECONDS);
                 callBack.onExecuteTaskComplete(heartRate);
             } catch (Exception e) {
                 Float errorHeartRate = Float.NaN;
@@ -452,7 +453,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onSensorChanged(SensorEvent sensorEvent) {
                 if(System.currentTimeMillis() < accelerometerDataCaptureStartTime
-                        + MEASUREMENT_OFFSET_TIME_MILLISECONDS) {
+                        + ACCELEROMETER_OFFSET_TIME_MILLISECONDS) {
                     // for start time and end time discard first and last few seconds as provided
                     // by the offset_milliseconds since it can have noise and disturbances due to
                     // the movement of phone
@@ -466,12 +467,12 @@ public class MainActivity extends AppCompatActivity
 
                 if(System.currentTimeMillis() > accelerometerDataCaptureStartTime
                         + ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS
-                        - MEASUREMENT_OFFSET_TIME_MILLISECONDS) {
+                        - ACCELEROMETER_OFFSET_TIME_MILLISECONDS) {
                     sensorManager.unregisterListener(this);
                     Log.d("Accelerometer Complete", "Capturing accelerometer data completed");
                     float measuredRespiratoryRate = computeRespiratoryRate(accelerometerData,
                             ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS,
-                            MEASUREMENT_OFFSET_TIME_MILLISECONDS);
+                            ACCELEROMETER_OFFSET_TIME_MILLISECONDS);
                     Log.d("Resp Measure Complete", "Respiratory Rate Measurement completed successfully");
                     updateRespiratoryRate(measuredRespiratoryRate);
                 }
