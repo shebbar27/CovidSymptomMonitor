@@ -21,6 +21,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -70,16 +71,17 @@ public class MainActivity extends AppCompatActivity
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private VideoCapture videoCapture;
     private Camera camera;
-    private Float heartRate;
-    private Float respiratoryRate;
     private TextView heartRateTextView;
     private TextView respiratoryRateTextView;
     private ExecutorService executorService;
     private Vibrator vibrator;
+    private Float heartRate = 0f;
+    private Float respiratoryRate = 0f;
     private boolean isCameraConfigured = false;
     private boolean heartRateMeasurementInProgress = false;
     private boolean respiratoryRateMeasurementInProgress = false;
     private boolean isSignsDataUploaded = false;
+    private long latestRecordID = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -232,10 +234,34 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void uploadSignsData() {
+        if(this.heartRateTextView.getText().toString().isEmpty()) {
+            createAndDisplayToast(this,
+                    getString(upload_signs_heart_rate_prerequisite_message),
+                    Toast.LENGTH_LONG);
+            return;
+        }
+
+        if(this.respiratoryRateTextView.getText().toString().isEmpty()) {
+            createAndDisplayToast(this,
+                    getString(upload_signs_respiratory_rate_prerequisite_message),
+                    Toast.LENGTH_LONG);
+            return;
+        }
+
+        if(this.heartRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
+            return;
+        }
+
+        if(this.respiratoryRateMeasurementInProgress) {
+            createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
+            return;
+        }
+
         createAndDisplayToast(this,
                 getString(uploading_measured_signs_data),
                 Toast.LENGTH_LONG);
-        // TODO
+        this.performDataBaseUpdate();
         createAndDisplayToast(this,
                 getString(uploading_measured_signs_data_success));
         this.isSignsDataUploaded = true;
@@ -250,7 +276,11 @@ public class MainActivity extends AppCompatActivity
         }
 
         try {
-            Intent intent = new Intent(this, SymptomLoggingActivity.class);
+            Intent intent = new Intent(getApplicationContext(), SymptomLoggingActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString(SymptomsDbHelper.RECORD_ID_KEY, String.valueOf(this.latestRecordID));
+            //intent.putExtra(SymptomsDbHelper.RECORD_ID_KEY, this.latestRecordID);
+            intent.putExtras(bundle);
             this.startActivity(intent);
         }
         catch (Exception e) {
@@ -449,7 +479,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
+                // TODO
             }
         };
 
@@ -469,5 +499,14 @@ public class MainActivity extends AppCompatActivity
             this.vibrator.cancel();
             this.vibrator.vibrate(vibrationEffect1);
         }
+    }
+
+    private void performDataBaseUpdate() {
+        SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(getApplicationContext());
+        SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+        this.latestRecordID = db.insert(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
+                null,
+                symptomsDbHelper.getDatabaseRowForInserting(this.heartRate, this.respiratoryRate));
+        db.close();
     }
 }

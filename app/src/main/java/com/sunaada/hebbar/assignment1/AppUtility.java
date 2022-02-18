@@ -187,7 +187,7 @@ public class AppUtility {
             j++;
         }
 
-        final float threshold = 0.05f;
+        final float threshold = 0.0001f;
         int heartRate = 0;
         Float prevValue = averageRedPixels.get(0);
         for(int k=1; k<averageRedPixels.size(); k++) {
@@ -210,9 +210,9 @@ public class AppUtility {
         float[] processedAxisValues;
         if(accelerometerData.isDataValid()) {
             processedAxisValues = accelerometerData.getWeightedAverageAxisValues(ratio_x, ratio_y, ratio_z);
-            Log.d("Averaged Accelerometer Data", Arrays.toString(processedAxisValues));
+            Log.d("Avg Accel Data", Arrays.toString(processedAxisValues));
             processedAxisValues = applyMovingAverageWindowFilter(processedAxisValues);
-            Log.d("Smoothened Accelerometer Data", Arrays.toString(processedAxisValues));
+            Log.d("Smooth Accel Data", Arrays.toString(processedAxisValues));
             result = countPeaks(processedAxisValues) * 60000f /(accelerometerDataCaptureDuration_ms - 2 * measurementOffsetTime_ms);
         }
 

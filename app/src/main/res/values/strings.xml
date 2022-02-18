@@ -59,6 +59,12 @@
     <string name="symptoms_navigation_prerequisite_message">
         Please Measure Heart Rate and Respiratory Rate and Upload Signs Data before navigating to Symptoms!
     </string>
+    <string name="upload_signs_heart_rate_prerequisite_message">
+        Please Measure Heart Rate and try again!
+    </string>
+    <string name="upload_signs_respiratory_rate_prerequisite_message">
+        Please Measure Respiratory Rate and try again!
+    </string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>

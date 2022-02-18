@@ -6,6 +6,7 @@ import static com.sunaada.hebbar.assignment1.AppUtility.*;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.res.Resources;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -25,12 +26,17 @@ public class SymptomLoggingActivity extends AppCompatActivity
     private final HashMap<String, Float> symptomsRating = new HashMap<>();
     private Spinner symptomsSpinner;
     private RatingBar symptomsRatingBar;
+    private String latestRecordID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_symptom_logging);
-        initializeSymptomsLogging();
+        this.initializeSymptomsLogging();
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null){
+            this.latestRecordID = bundle.getString(SymptomsDbHelper.RECORD_ID_KEY);
+        }
     }
 
     @Override
@@ -54,7 +60,7 @@ public class SymptomLoggingActivity extends AppCompatActivity
             createAndDisplayToast(this,
                     getString(R.string.uploading_symptoms_data),
                     Toast.LENGTH_LONG);
-            // TODO
+            this.performDataBaseUpdate();
             createAndDisplayToast(this, getString(R.string.uploading_symptoms_data_success));
         }
     }
@@ -113,5 +119,18 @@ public class SymptomLoggingActivity extends AppCompatActivity
         String symptom = this.symptomsSpinner.getSelectedItem().toString();
         if(this.symptomsRating.containsKey(symptom))
             this.symptomsRating.put(symptom, rating);
+    }
+
+    private void performDataBaseUpdate() {
+        SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(getApplicationContext());
+        SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+        Float[] symptomRatings = this.symptomsRating.values().toArray(new Float[0]);
+        final String whereClause = SymptomsDbHelper.RECORD_ID + "=?";
+        final String[] whereArgs = { this.latestRecordID };
+        db.update(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
+                symptomsDbHelper.getDatabaseRowForInserting(symptomRatings),
+                whereClause,
+                whereArgs);
+        db.close();
     }
 }
