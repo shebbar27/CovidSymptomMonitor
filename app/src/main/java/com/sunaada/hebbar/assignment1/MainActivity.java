@@ -26,6 +26,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -39,6 +40,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.text.NumberFormat;
@@ -49,7 +53,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity
-        implements OnClickListener, VideoCapture.OnVideoSavedCallback {
+        implements OnClickListener, VideoCapture.OnVideoSavedCallback, OnSuccessListener<Location> {
 
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
@@ -63,6 +67,8 @@ public class MainActivity extends AppCompatActivity
     private static final String[] PERMISSIONS = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
     };
 
     private static File videoCaptureFile;
@@ -96,7 +102,6 @@ public class MainActivity extends AppCompatActivity
                     add(measure_respiratory_rate_button);
                     add(upload_signs_button);
                     add(R.id.symptoms_button);
-                    add(R.id.exit_button);
                 }}
         );
 
@@ -124,18 +129,16 @@ public class MainActivity extends AppCompatActivity
             case symptoms_button:
                 this.switchToSymptomLoggingActivity();
                 break;
-            case exit_button:
-                this.exitApplication();
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode == REQUEST_PERMISSIONS_CODE && grantResults.length > 0 && this.areAllPermissionsGranted()) {
+        if (requestCode == REQUEST_PERMISSIONS_CODE && grantResults.length > 0 && this.areAllPermissionsGranted()) {
             this.configureAndStartCameraPreview();
-        }
-        else {
+            this.initializeGpsLocationProviderClientAndScheduleDataCollection();
+        } else {
             createExitAlertDialogWithConsentAndExit(this,
                     getString(camera_permission_denied_alert_title),
                     getString(camera_permission_denied_alert_message),
@@ -161,10 +164,10 @@ public class MainActivity extends AppCompatActivity
     @SuppressLint("RestrictedApi")
     @Override
     public void onError(int videoCaptureError, @NonNull String message, @Nullable Throwable cause) {
-        if(cause != null) {
+        if (cause != null) {
             cause.printStackTrace();
         }
-        
+
         Log.i("Video Capture Failed", message, cause);
         createAndDisplayToast(this,
                 getString(save_video_error_message) + videoCaptureFile,
@@ -175,7 +178,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(this.executorService != null) {
+        if (this.executorService != null) {
             this.executorService.shutdown();
             try {
                 if (!this.executorService.awaitTermination(800, TimeUnit.MILLISECONDS)) {
@@ -188,17 +191,17 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureHeartRate() {
-        if(this.heartRateMeasurementInProgress) {
+        if (this.heartRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
             return;
         }
 
-        if(this.respiratoryRateMeasurementInProgress) {
+        if (this.respiratoryRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
             return;
         }
 
-        if(!this.isCameraConfigured) {
+        if (!this.isCameraConfigured) {
             this.initializeCamera();
         }
 
@@ -214,12 +217,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void measureRespiratoryRate() {
-        if(this.heartRateMeasurementInProgress) {
+        if (this.heartRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
             return;
         }
 
-        if(this.respiratoryRateMeasurementInProgress) {
+        if (this.respiratoryRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
             return;
         }
@@ -235,26 +238,26 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void uploadSignsData() {
-        if(this.heartRateTextView.getText().toString().isEmpty()) {
+        if (this.heartRateTextView.getText().toString().isEmpty()) {
             createAndDisplayToast(this,
                     getString(upload_signs_heart_rate_prerequisite_message),
                     Toast.LENGTH_LONG);
             return;
         }
 
-        if(this.respiratoryRateTextView.getText().toString().isEmpty()) {
+        if (this.respiratoryRateTextView.getText().toString().isEmpty()) {
             createAndDisplayToast(this,
                     getString(upload_signs_respiratory_rate_prerequisite_message),
                     Toast.LENGTH_LONG);
             return;
         }
 
-        if(this.heartRateMeasurementInProgress) {
+        if (this.heartRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(heart_rate_measurement_in_progress));
             return;
         }
 
-        if(this.respiratoryRateMeasurementInProgress) {
+        if (this.respiratoryRateMeasurementInProgress) {
             createAndDisplayToast(this, getString(respiratory_rate_measurement_in_progress));
             return;
         }
@@ -269,7 +272,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void switchToSymptomLoggingActivity() {
-        if(!this.isSignsDataUploaded) {
+        if (!this.isSignsDataUploaded) {
             createAndDisplayToast(this,
                     getString(symptoms_navigation_prerequisite_message),
                     Toast.LENGTH_LONG);
@@ -283,23 +286,14 @@ public class MainActivity extends AppCompatActivity
             //intent.putExtra(SymptomsDbHelper.RECORD_ID_KEY, this.latestRecordID);
             intent.putExtras(bundle);
             this.startActivity(intent);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             handleException(e, this);
         }
     }
 
-    private void exitApplication() {
-        createExitAlertDialogWithConsentAndExit(this,
-                getString(exit_dialog_title),
-                getString(exit_dialog_message),
-                getString(alert_dialog_yes),
-                getString(alert_dialog_no));
-    }
-
     private boolean areAllPermissionsGranted() {
-        for(String PERMISSION: PERMISSIONS) {
-            if(ContextCompat.checkSelfPermission(this, PERMISSION) == PackageManager.PERMISSION_DENIED) {
+        for (String PERMISSION : PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, PERMISSION) == PackageManager.PERMISSION_DENIED) {
                 return false;
             }
         }
@@ -316,7 +310,7 @@ public class MainActivity extends AppCompatActivity
         this.videoCapture = new VideoCapture.Builder().build();
         this.videoView = findViewById(playback_video_view);
         this.videoView.setVisibility(View.INVISIBLE);
-        if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             requestPermissions(PERMISSIONS, REQUEST_PERMISSIONS_CODE);
         }
     }
@@ -339,9 +333,9 @@ public class MainActivity extends AppCompatActivity
 
     @SuppressLint("RestrictedApi")
     private void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
-         Preview preview = new Preview.Builder()
-                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                 .build();
+        Preview preview = new Preview.Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .build();
 
         CameraSelector cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -443,8 +437,8 @@ public class MainActivity extends AppCompatActivity
     private void readAccelerometerSensorAndUpdateRespiratoryRate() {
         Log.d("Accelerometer Started", "Started capturing accelerometer data");
         Log.d("Current Thread",
-                    "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
-                            + "Current Thread: " + Thread.currentThread());
+                "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
+                        + "Current Thread: " + Thread.currentThread());
         SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         Sensor accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         AccelerometerData accelerometerData = new AccelerometerData();
@@ -452,7 +446,7 @@ public class MainActivity extends AppCompatActivity
         SensorEventListener sensorEventListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent sensorEvent) {
-                if(System.currentTimeMillis() < accelerometerDataCaptureStartTime
+                if (System.currentTimeMillis() < accelerometerDataCaptureStartTime
                         + ACCELEROMETER_OFFSET_TIME_MILLISECONDS) {
                     // for start time and end time discard first and last few seconds as provided
                     // by the offset_milliseconds since it can have noise and disturbances due to
@@ -461,11 +455,11 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 Sensor changedSensor = sensorEvent.sensor;
-                if(changedSensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                if (changedSensor.getType() == Sensor.TYPE_ACCELEROMETER) {
                     accelerometerData.appendAxesValues(sensorEvent);
                 }
 
-                if(System.currentTimeMillis() > accelerometerDataCaptureStartTime
+                if (System.currentTimeMillis() > accelerometerDataCaptureStartTime
                         + ACCELEROMETER_DATA_CAPTURE_DURATION_MILLISECONDS
                         - ACCELEROMETER_OFFSET_TIME_MILLISECONDS) {
                     sensorManager.unregisterListener(this);
@@ -509,5 +503,20 @@ public class MainActivity extends AppCompatActivity
                 null,
                 symptomsDbHelper.getDatabaseRowForInserting(this.heartRate, this.respiratoryRate));
         db.close();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void initializeGpsLocationProviderClientAndScheduleDataCollection() {
+        FusedLocationProviderClient fusedLocationProviderClient = LocationServices
+                .getFusedLocationProviderClient(this);
+
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this);
+    }
+
+    @Override
+    public void onSuccess(Location location) {
+        if (location != null) {
+            createAndDisplayToast(this, location.toString(), Toast.LENGTH_LONG);
+        }
     }
 }
