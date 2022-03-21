@@ -29,7 +29,10 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
                     + " symptomsLossOfSmellOrTaste NUMERIC, "
                     + " symptomsCough NUMERIC, "
                     + " symptomsShortnessOfBreath NUMERIC, "
-                    + " symptomsFeelingTired NUMERIC ); ";
+                    + " symptomsFeelingTired NUMERIC, "
+                    + " locationX TEXT, "
+                    + " locationY TEXT, "
+                    + " time TEXT); ";
 
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + SYMPTOMS_TABLE_NAME;
@@ -54,14 +57,27 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
         this.onCreate(db);
     }
 
-    public ContentValues getDatabaseRowForInserting(float heartRate, float respiratoryRate) {
+    public ContentValues getDatabaseRowForInserting(float heartRate, float respiratoryRate, String time) {
         ContentValues contentValues = new ContentValues();
         contentValues.put("heartRate", heartRate);
         contentValues.put("respiratoryRate", respiratoryRate);
+        contentValues.put("symptomsNausea", 0f);
+        contentValues.put("symptomsHeadache", 0f);
+        contentValues.put("symptomsDiarrhea", 0f);
+        contentValues.put("symptomsSoarThroat", 0f);
+        contentValues.put("symptomsFever", 0f);
+        contentValues.put("symptomsMuscleAche", 0f);
+        contentValues.put("symptomsLossOfSmellOrTaste", 0f);
+        contentValues.put("symptomsCough", 0f);
+        contentValues.put("symptomsShortnessOfBreath", 0f);
+        contentValues.put("symptomsFeelingTired", 0f);
+        contentValues.put("locationX", "0");
+        contentValues.put("locationY", "0");
+        contentValues.put("time", time);
         return contentValues;
     }
 
-    public ContentValues getDatabaseRowForInserting(Float[] symptomsRating) {
+    public ContentValues getDatabaseRowForUpdating(Float[] symptomsRating) {
         ContentValues contentValues = new ContentValues();
         contentValues.put("symptomsNausea", symptomsRating[0]);
         contentValues.put("symptomsHeadache", symptomsRating[1]);
@@ -73,6 +89,36 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
         contentValues.put("symptomsCough", symptomsRating[7]);
         contentValues.put("symptomsShortnessOfBreath", symptomsRating[8]);
         contentValues.put("symptomsFeelingTired", symptomsRating[9]);
+        return contentValues;
+    }
+
+    public ContentValues getEmptyDatabaseRowForInserting() {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("heartRate", 0f);
+        contentValues.put("respiratoryRate", 0f);
+        contentValues.put("symptomsNausea", 0f);
+        contentValues.put("symptomsHeadache", 0f);
+        contentValues.put("symptomsDiarrhea", 0f);
+        contentValues.put("symptomsSoarThroat", 0f);
+        contentValues.put("symptomsFever", 0f);
+        contentValues.put("symptomsMuscleAche", 0f);
+        contentValues.put("symptomsLossOfSmellOrTaste", 0f);
+        contentValues.put("symptomsCough", 0f);
+        contentValues.put("symptomsShortnessOfBreath", 0f);
+        contentValues.put("symptomsFeelingTired", 0f);
+        contentValues.put("locationX", "0");
+        contentValues.put("locationY", "0");
+        contentValues.put("time", "2022-01-01T00:00:00Z");
+        return contentValues;
+    }
+
+    public ContentValues getDatabaseRowForInserting(String locationX,
+                                                    String locationY,
+                                                    String time) {
+        ContentValues contentValues = getEmptyDatabaseRowForInserting();
+        contentValues.put("locationX", locationX);
+        contentValues.put("locationY", locationY);
+        contentValues.put("time", time);
         return contentValues;
     }
 }

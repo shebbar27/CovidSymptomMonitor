@@ -40,7 +40,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.exit_button) {
+        if (v.getId() == R.id.exit_button) {
             this.exitApplication();
         }
         else if(this.usernameEditText != null &&

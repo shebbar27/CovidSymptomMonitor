@@ -18,6 +18,8 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -26,7 +28,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,20 +41,30 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestHandle;
+
+import org.json.JSONObject;
 
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.io.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import cz.msebera.android.httpclient.Header;
+
 public class MainActivity extends AppCompatActivity
-        implements OnClickListener, VideoCapture.OnVideoSavedCallback, OnSuccessListener<Location> {
+        implements OnClickListener, VideoCapture.OnVideoSavedCallback {
 
     private static final int REQUEST_PERMISSIONS_CODE = 27;
     private static final String FINGERTIP_VIDEO_FILENAME = "FingerTipVideo";
@@ -63,14 +74,16 @@ public class MainActivity extends AppCompatActivity
     private static final long ACCELEROMETER_OFFSET_TIME_MILLISECONDS = 7000;
     private static final long VIBRATION_DURATION_SHORT = 250;
     private static final long VIBRATION_DURATION_LONG = 500;
+    private static final int BROADCAST_REQUEST_CODE = 127;
+    private static final int ALARM_BROADCAST_INTERVAL_MILLISECONDS = 15 * 60 * 1000;
     private static final NumberFormat DEFAULT_NUMBER_FORMAT = AppUtility.getDefaultNumberFormat();
-    private static final String[] PERMISSIONS = {
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-    };
-
+    private static final ArrayList<String> PERMISSIONS = new ArrayList<>(
+            Arrays.asList(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+    );
     private static File videoCaptureFile;
 
     private PreviewView previewView;
@@ -94,6 +107,9 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            PERMISSIONS.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+        }
 
         AppUtility.registerButtonOnClickCallBack(this,
                 this,
@@ -111,6 +127,7 @@ public class MainActivity extends AppCompatActivity
         this.vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         this.executorService = Executors.newCachedThreadPool();
         this.initializeCamera();
+        this.getPermissions();
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -137,7 +154,7 @@ public class MainActivity extends AppCompatActivity
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_PERMISSIONS_CODE && grantResults.length > 0 && this.areAllPermissionsGranted()) {
             this.configureAndStartCameraPreview();
-            this.initializeGpsLocationProviderClientAndScheduleDataCollection();
+            this.initializeAndStartGpsLocationService();
         } else {
             createExitAlertDialogWithConsentAndExit(this,
                     getString(camera_permission_denied_alert_title),
@@ -291,9 +308,15 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    private void getPermissions() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            requestPermissions(PERMISSIONS.toArray(new String[0]), REQUEST_PERMISSIONS_CODE);
+        }
+    }
+
     private boolean areAllPermissionsGranted() {
-        for (String PERMISSION : PERMISSIONS) {
-            if (ContextCompat.checkSelfPermission(this, PERMISSION) == PackageManager.PERMISSION_DENIED) {
+        for (String permission : PERMISSIONS) {
+            if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_DENIED) {
                 return false;
             }
         }
@@ -310,9 +333,6 @@ public class MainActivity extends AppCompatActivity
         this.videoCapture = new VideoCapture.Builder().build();
         this.videoView = findViewById(playback_video_view);
         this.videoView.setVisibility(View.INVISIBLE);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            requestPermissions(PERMISSIONS, REQUEST_PERMISSIONS_CODE);
-        }
     }
 
     private void configureAndStartCameraPreview() {
@@ -499,24 +519,35 @@ public class MainActivity extends AppCompatActivity
     private void performDataBaseUpdate() {
         SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(getApplicationContext());
         SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String timeStamp = sdf.format(new Date());
         this.latestRecordID = db.insert(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
                 null,
-                symptomsDbHelper.getDatabaseRowForInserting(this.heartRate, this.respiratoryRate));
+                symptomsDbHelper.getDatabaseRowForInserting(
+                        this.heartRate,
+                        this.respiratoryRate,
+                        timeStamp));
         db.close();
     }
 
-    @SuppressLint("MissingPermission")
-    private void initializeGpsLocationProviderClientAndScheduleDataCollection() {
-        FusedLocationProviderClient fusedLocationProviderClient = LocationServices
-                .getFusedLocationProviderClient(this);
+    private void initializeAndStartGpsLocationService() {
+        AlarmManager alarmManager = (AlarmManager) this.getSystemService(ALARM_SERVICE);
+        Intent intent = new Intent(this, AlarmBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(),
+                        BROADCAST_REQUEST_CODE,
+                        intent,
+                        PendingIntent.FLAG_MUTABLE);
+        alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis(),
+                ALARM_BROADCAST_INTERVAL_MILLISECONDS,
+                pendingIntent);
 
-        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this);
-    }
-
-    @Override
-    public void onSuccess(Location location) {
-        if (location != null) {
-            createAndDisplayToast(this, location.toString(), Toast.LENGTH_LONG);
-        }
+        AppUtility.createAndDisplayToast(this,
+                String.format(Locale.US,
+                        "Location data and network speed will be updated approximately every %d minutes",
+                        ALARM_BROADCAST_INTERVAL_MILLISECONDS/60000),
+                Toast.LENGTH_LONG);
     }
 }

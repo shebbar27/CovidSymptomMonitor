@@ -128,7 +128,7 @@ public class SymptomLoggingActivity extends AppCompatActivity
         final String whereClause = SymptomsDbHelper.RECORD_ID + "=?";
         final String[] whereArgs = { this.latestRecordID };
         db.update(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
-                symptomsDbHelper.getDatabaseRowForInserting(symptomRatings),
+                symptomsDbHelper.getDatabaseRowForUpdating(symptomRatings),
                 whereClause,
                 whereArgs);
         db.close();

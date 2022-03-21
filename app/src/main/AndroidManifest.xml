@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -35,6 +37,10 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:parentActivityName=".LoginActivity" />
+        <receiver
+            android:name=".AlarmBroadcastReceiver"
+            android:exported="true">
+        </receiver>
     </application>
 
 </manifest>
