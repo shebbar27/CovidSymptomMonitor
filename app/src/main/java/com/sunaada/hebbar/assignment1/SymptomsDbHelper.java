@@ -2,12 +2,12 @@ package com.sunaada.hebbar.assignment1;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import net.sqlcipher.database.SQLiteDatabase;
+import java.io.File;
 
-public class SymptomsDbHelper extends SQLiteOpenHelper {
+public class SymptomsDbHelper {
 
     public static final int DATABASE_VERSION = 1;
     private static final String SYMPTOM_MONITOR_DATA_BASE_NAME = "symptomMonitorDB";
@@ -16,7 +16,7 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
     public static final String RECORD_ID_KEY= "record_id_key";
 
     private static final String SQL_CREATE_TABLE =
-            "CREATE TABLE " + SYMPTOMS_TABLE_NAME + "("
+            "CREATE TABLE IF NOT EXISTS " + SYMPTOMS_TABLE_NAME + "("
                     + " recordId INTEGER PRIMARY KEY autoincrement, "
                     + " heartRate NUMERIC, "
                     + " respiratoryRate NUMERIC, "
@@ -37,27 +37,23 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + SYMPTOMS_TABLE_NAME;
 
-    public SymptomsDbHelper(Context context) {
-        super(context, SYMPTOM_MONITOR_DATA_BASE_NAME, null, DATABASE_VERSION);
-    }
+    public SQLiteDatabase database;
 
-    @Override
-    public void onCreate(SQLiteDatabase db) {
+    public SymptomsDbHelper(Context context) {
+        SQLiteDatabase.loadLibs(context);
+        File databaseFile = context.getDatabasePath(SYMPTOM_MONITOR_DATA_BASE_NAME);
+        this.database = SQLiteDatabase.openOrCreateDatabase(databaseFile, context.getString(R.string.password), null);
         try {
-            db.execSQL(SQL_CREATE_TABLE);
-        }catch (SQLiteException e) {
+            this.database.execSQL(SQL_CREATE_TABLE);
+            Log.d("db transaction success", "SQLite database transaction successful!");
+        }
+        catch (SQLiteException e) {
             e.printStackTrace();
             Log.d("db transaction failed", "SQLite database transaction failed: " + e);
         }
     }
 
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL(SQL_DELETE_ENTRIES);
-        this.onCreate(db);
-    }
-
-    public ContentValues getDatabaseRowForInserting(float heartRate, float respiratoryRate, String time) {
+    public static ContentValues getDatabaseRowForInserting(float heartRate, float respiratoryRate, String time) {
         ContentValues contentValues = new ContentValues();
         contentValues.put("heartRate", heartRate);
         contentValues.put("respiratoryRate", respiratoryRate);
@@ -77,7 +73,7 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
-    public ContentValues getDatabaseRowForUpdating(Float[] symptomsRating) {
+    public static ContentValues getDatabaseRowForUpdating(Float[] symptomsRating) {
         ContentValues contentValues = new ContentValues();
         contentValues.put("symptomsNausea", symptomsRating[0]);
         contentValues.put("symptomsHeadache", symptomsRating[1]);
@@ -92,7 +88,7 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
-    public ContentValues getEmptyDatabaseRowForInserting() {
+    public static ContentValues getEmptyDatabaseRowForInserting() {
         ContentValues contentValues = new ContentValues();
         contentValues.put("heartRate", 0f);
         contentValues.put("respiratoryRate", 0f);
@@ -112,7 +108,7 @@ public class SymptomsDbHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
-    public ContentValues getDatabaseRowForInserting(String locationX,
+    public static ContentValues getDatabaseRowForInserting(String locationX,
                                                     String locationY,
                                                     String time) {
         ContentValues contentValues = getEmptyDatabaseRowForInserting();

@@ -5,7 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.location.LocationManager;
 import android.os.Looper;
 import android.util.Log;
@@ -86,13 +86,13 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
                                             + "Current Thread: " + Thread.currentThread());
 
                             SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(context);
-                            SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+                            SQLiteDatabase db = symptomsDbHelper.database;
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
                             sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
                             String timeStamp = sdf.format(new Date());
                             db.insert(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
                                     null,
-                                    symptomsDbHelper.getDatabaseRowForInserting(
+                                    SymptomsDbHelper.getDatabaseRowForInserting(
                                             Double.toString(location.getLatitude()),
                                             Double.toString(location.getLongitude()),
                                             timeStamp));

@@ -6,7 +6,7 @@ import static com.sunaada.hebbar.assignment1.AppUtility.*;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.res.Resources;
-import android.database.sqlite.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -123,12 +123,12 @@ public class SymptomLoggingActivity extends AppCompatActivity
 
     private void performDataBaseUpdate() {
         SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(getApplicationContext());
-        SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+        SQLiteDatabase db = symptomsDbHelper.database;
         Float[] symptomRatings = this.symptomsRating.values().toArray(new Float[0]);
         final String whereClause = SymptomsDbHelper.RECORD_ID + "=?";
         final String[] whereArgs = { this.latestRecordID };
         db.update(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
-                symptomsDbHelper.getDatabaseRowForUpdating(symptomRatings),
+                SymptomsDbHelper.getDatabaseRowForUpdating(symptomRatings),
                 whereClause,
                 whereArgs);
         db.close();

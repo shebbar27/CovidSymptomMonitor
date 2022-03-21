@@ -23,7 +23,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -42,12 +42,6 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestHandle;
-
-import org.json.JSONObject;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -60,8 +54,6 @@ import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity
         implements OnClickListener, VideoCapture.OnVideoSavedCallback {
@@ -205,6 +197,20 @@ public class MainActivity extends AppCompatActivity
                 this.executorService.shutdownNow();
             }
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putFloat("heartRate", this.heartRate);
+        savedInstanceState.putFloat("respiratoryRate", this.respiratoryRate);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        this.heartRate = savedInstanceState.getFloat("heartRate");
+        this.respiratoryRate = savedInstanceState.getFloat("respiratoryRate");
     }
 
     private void measureHeartRate() {
@@ -518,13 +524,13 @@ public class MainActivity extends AppCompatActivity
 
     private void performDataBaseUpdate() {
         SymptomsDbHelper symptomsDbHelper = new SymptomsDbHelper(getApplicationContext());
-        SQLiteDatabase db = symptomsDbHelper.getWritableDatabase();
+        SQLiteDatabase db = symptomsDbHelper.database;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         String timeStamp = sdf.format(new Date());
         this.latestRecordID = db.insert(SymptomsDbHelper.SYMPTOMS_TABLE_NAME,
                 null,
-                symptomsDbHelper.getDatabaseRowForInserting(
+                SymptomsDbHelper.getDatabaseRowForInserting(
                         this.heartRate,
                         this.respiratoryRate,
                         timeStamp));
