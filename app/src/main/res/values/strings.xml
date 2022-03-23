@@ -65,6 +65,13 @@
     <string name="upload_signs_respiratory_rate_prerequisite_message">
         Please Measure Respiratory Rate and try again!
     </string>
+    <string name="enter_username">Enter username</string>
+    <string name="login_button_text">Login</string>
+    <string name="enter_password">Enter password</string>
+    <string name="username">shebbarm</string>
+    <string name="password">0453@asu</string>
+    <string name="incorrect_username_or_password">Either the username or the password is incorrect! Please try again!</string>
+    <string name="db_files">dbfiles</string>
     <string-array name="select_symptom_spinner_items">
         <item>Nausea</item>
         <item>Headache</item>
