@@ -3,9 +3,7 @@ package com.sunaada.hebbar.assignment1;
 import static android.content.DialogInterface.*;
 import static com.sunaada.hebbar.assignment1.R.string.*;
 
-import android.content.Context;
 import android.graphics.Bitmap;
-import android.icu.text.MessagePattern;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -112,15 +110,6 @@ public class AppUtility {
 
     public static void createAndDisplayToast(AppCompatActivity activity, String message) {
         createAndDisplayToast(activity, message, Toast.LENGTH_SHORT);
-    }
-
-    public static void createAndDisplayToast(Context context, String message, int duration) {
-        Toast toast = Toast.makeText(context, message, duration);
-        toast.show();
-    }
-
-    public static void createAndDisplayToast(Context context, String message) {
-        createAndDisplayToast(context, message, Toast.LENGTH_SHORT);
     }
 
     public static Executor getExecutor(AppCompatActivity activity) {

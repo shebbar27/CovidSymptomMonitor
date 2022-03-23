@@ -14,7 +14,10 @@ import androidx.core.app.ActivityCompat;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
@@ -30,6 +33,8 @@ import cz.msebera.android.httpclient.Header;
 public class AlarmBroadcastReceiver extends BroadcastReceiver {
 
     private static final String CONNECTION_SPEED_DATA_FILENAME = "connectionSpeed.txt";
+    private static final String UPLOAD_TEST_FILENAME = "uploadTestFile";
+    private static final String SERVER_URL_FOR_UPLOADING_FILE = "http://192.168.0.33:8027/uploadFiles";
     private final ExecutorService executorService;
 
     public AlarmBroadcastReceiver() {
@@ -57,11 +62,24 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
                 "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                         + "Current Thread: " + Thread.currentThread());
 
-        this.executorService.execute(() -> this.getLocationDataAndUploadItToDb(context, intent));
-        this.computeConnectionSpeedAndLogData(context);
+        this.executorService.execute(() -> getLocationDataAndUploadItToDb(context, intent));
+
+        try {
+            computeConnectionSpeedAndLogData(context);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();Log.d("Network speed",
+                    "Upload test file not found! Uploading test file to the server failed!");
+        }
+
+        try {
+            uploadDataBaseFileToServer(context);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.d("Db upload","Db file not found! Uploading Db to the server failed!");
+        }
     }
 
-    private void getLocationDataAndUploadItToDb(Context context, Intent intent) {
+    public static void getLocationDataAndUploadItToDb(Context context, Intent intent) {
         Log.d("Location data","Initiating location manager to collect gps data");
         Log.d("Location data",
                 "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
@@ -80,7 +98,10 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
                 Looper.prepare();
                 locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER,
                         location -> {
-                            Log.d("Location data", "Location data: x = " + location.getLatitude() + "y = " + location.getLongitude());
+                            Log.d("Location data",
+                                    "Location data: " +
+                                            "x = " + location.getLatitude() +
+                                            "y = " + location.getLongitude());
                             Log.d("Location data",
                                     "In" + Thread.currentThread().getStackTrace()[1].getMethodName()
                                             + "Current Thread: " + Thread.currentThread());
@@ -105,10 +126,18 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
         }
     }
 
-    private void computeConnectionSpeedAndLogData(Context context) {
+    public static void computeConnectionSpeedAndLogData(Context context) throws FileNotFoundException {
         Log.d("Network speed", "Running Network speed measurement");
         AsyncHttpClient client = new AsyncHttpClient();
-        client.get("https://www.google.com", new AsyncHttpResponseHandler() {
+        File uploadTest = new File(context.getFilesDir(), UPLOAD_TEST_FILENAME);
+        RequestParams requestParams = new RequestParams();
+        if(!uploadTest.exists()) {
+            Log.d("Network speed", "Upload test file not found!");
+            return;
+        }
+
+        requestParams.put(context.getString(R.string.db_files), new File[]{ uploadTest });
+        client.post(SERVER_URL_FOR_UPLOADING_FILE, requestParams, new AsyncHttpResponseHandler() {
             private long startTime;
 
             @Override
@@ -155,6 +184,46 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
             public void onRetry(int retryNo) {
                 // called when request is retried
                 Log.d("Network speed", "Retrying network speed measurement for " + retryNo);
+            }
+        });
+    }
+
+    private static void uploadDataBaseFileToServer(Context context) throws FileNotFoundException {
+        Log.d("Db upload", "Request for uploading db file to the database received!");
+        AsyncHttpClient client = new AsyncHttpClient();
+        File dbFile = context.getDatabasePath(SymptomsDbHelper.SYMPTOM_MONITOR_DATA_BASE_NAME);
+        RequestParams requestParams = new RequestParams();
+        if(!dbFile.exists()) {
+            Log.d("Db upload", "Db file not found!");
+            return;
+        }
+
+        requestParams.put(context.getString(R.string.db_files), new File[]{ dbFile });
+        client.post(SERVER_URL_FOR_UPLOADING_FILE, requestParams, new AsyncHttpResponseHandler() {
+
+            @Override
+            public void onStart() {
+                // called before request is started
+                Log.d("Db upload", "Started uploading db file to the server");
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] response) {
+                // called when response HTTP status is "200 OK"
+                Log.d("Db upload", "Db file successfully uploaded to the server ");
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] errorResponse, Throwable e) {
+                // called when response HTTP status is "4XX" (eg. 401, 403, 404)
+                e.printStackTrace();
+                Log.d("Db upload", "Uploading db file to the server failed due to " + e);
+            }
+
+            @Override
+            public void onRetry(int retryNo) {
+                // called when request is retried
+                Log.d("Db upload", "Retrying to upload db file to the server" + retryNo);
             }
         });
     }

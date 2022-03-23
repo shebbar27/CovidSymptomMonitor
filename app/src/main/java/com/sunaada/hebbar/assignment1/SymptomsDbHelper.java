@@ -9,8 +9,7 @@ import java.io.File;
 
 public class SymptomsDbHelper {
 
-    public static final int DATABASE_VERSION = 1;
-    private static final String SYMPTOM_MONITOR_DATA_BASE_NAME = "symptomMonitorDB";
+    public static final String SYMPTOM_MONITOR_DATA_BASE_NAME = "symptomMonitorDB";
     public static final String SYMPTOMS_TABLE_NAME = "symptomsTable";
     public static final String RECORD_ID= "recordId";
     public static final String RECORD_ID_KEY= "record_id_key";
@@ -34,15 +33,13 @@ public class SymptomsDbHelper {
                     + " locationY TEXT, "
                     + " time TEXT); ";
 
-    private static final String SQL_DELETE_ENTRIES =
-            "DROP TABLE IF EXISTS " + SYMPTOMS_TABLE_NAME;
-
     public SQLiteDatabase database;
 
     public SymptomsDbHelper(Context context) {
         SQLiteDatabase.loadLibs(context);
         File databaseFile = context.getDatabasePath(SYMPTOM_MONITOR_DATA_BASE_NAME);
         this.database = SQLiteDatabase.openOrCreateDatabase(databaseFile, context.getString(R.string.password), null);
+
         try {
             this.database.execSQL(SQL_CREATE_TABLE);
             Log.d("db transaction success", "SQLite database transaction successful!");
